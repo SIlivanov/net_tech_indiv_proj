@@ -1,14 +1,60 @@
 {% extends 'layout.html' %}
 {% block main %}
 
-  <!-- ВЕРХНИЙ БЛОК: Панель технолога или Инфо-баннер -->
+  <!-- ================= ПРОФИЛЬ И МЕРКИ КЛИЕНТА ================= -->
+  {% if account %}
+    <div class="card shadow-sm mb-4 border-0">
+      <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center py-2">
+        <span><b>Мои параметры и данные доставки</b></span>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-light text-dark">Зарегистрировано клиентов: {{ users|length }}</span>
+          <form action="/web/users/delete" method="post" class="d-inline">
+            <button type="submit" class="btn btn-danger btn-sm py-0">Удалить аккаунт</button>
+          </form>
+        </div>
+      </div>
+      <div class="card-body py-2">
+        <form action="/web/users/update-profile" method="post" class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label small text-muted mb-1">Телефон</label>
+            <input type="text" name="phone" class="form-control form-control-sm" value="{{ account.phone }}" required />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Моя мерка (Размер)</label>
+            <select name="default_size" class="form-select form-select-sm">
+              {% for sz in ['S (44)', 'M (46)', 'L (48)', 'XL (50)'] %}
+                <option value="{{ sz }}" {% if account.default_size == sz %}selected{% endif %}>{{ sz }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small text-muted mb-1">Адрес доставки / Шоурума по умолчанию</label>
+            <input type="text" name="city" class="form-control form-control-sm" value="{{ account.city }}" required />
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-outline-dark btn-sm w-100">Сохранить данные</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-secondary d-flex justify-content-between align-items-center shadow-sm">
+      <div>
+        <strong>Добро пожаловать на сайт швейной фабрики!</strong>
+        Войдите как <em>Технолог</em> для управления каталогом и цехом или как <em>Заказчик</em> для сохранения мерок и заказа пошива.
+      </div>
+      <a href="/auth" class="btn btn-dark btn-sm">Авторизоваться</a>
+    </div>
+  {% endif %}
+
+  <!-- ================= ПАНЕЛЬ ТЕХНОЛОГА ================= -->
   {% if account and account.role == 'Технолог фабрики' %}
     <div class="card shadow-sm mb-4 border-0">
       <div class="card-header bg-dark text-white fw-semibold">
         Панель технолога: Запуск новой модели одежды в серийное производство
       </div>
       <div class="card-body">
-        <form action="/actions/release-model" method="post" class="row g-3">
+        <form action="/web/catalog/release" method="post" class="row g-3">
           <div class="col-md-2">
             <label class="form-label small text-muted">Артикул (SKU)</label>
             <input type="text" name="sku" class="form-control form-control-sm" placeholder="KM-204" required />
@@ -38,27 +84,17 @@
             <input type="number" name="stock_qty" class="form-control form-control-sm" value="20" min="1" required />
           </div>
           <div class="col-md-3 d-flex align-items-end">
-            <button type="submit" class="btn btn-terracotta btn-sm w-100 fw-semibold">
-              + Выпустить в каталог
-            </button>
+            <button type="submit" class="btn btn-terracotta btn-sm w-100 fw-semibold">+ Выпустить в каталог</button>
           </div>
         </form>
       </div>
     </div>
-  {% elif not account %}
-    <div class="alert alert-secondary d-flex justify-content-between align-items-center shadow-sm">
-      <div>
-        <strong>Добро пожаловать в онлайн-шоурум фабрики одежды!</strong>
-        Авторизуйтесь как <em>Технолог</em> для выпуска коллекций или как <em>Заказчик</em> для оформления пошива и покупки.
-      </div>
-      <a href="/auth" class="btn btn-dark btn-sm">Войти в систему</a>
-    </div>
   {% endif %}
 
-  <!-- СРЕДНИЙ БЛОК: Сетка коллекций одежды (3 колонки) -->
+  <!-- ================= КАТАЛОГ ИЗДЕЛИЙ ================= -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0">Сезонный каталог изделий</h4>
-    <span class="text-muted small">Всего моделей в каталоге: {{ catalog|length }}</span>
+    <span class="text-muted small">Всего моделей: {{ catalog|length }}</span>
   </div>
 
   {% if catalog %}
@@ -68,46 +104,59 @@
           <div class="card h-100 shadow-sm card-garment">
             <div class="card-body d-flex flex-column">
               <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="badge badge-season">{{ item.collection.value }}</span>
+                <span class="badge badge-season">{{ item.collection }}</span>
                 <code class="text-muted">Арт: {{ item.sku }}</code>
               </div>
               <h5 class="card-title fw-bold">{{ item.name }}</h5>
-              <p class="card-text small text-muted mb-2">
-                <b>Ткань:</b> {{ item.fabric }}
-              </p>
+              <p class="card-text small text-muted mb-2"><b>Ткань:</b> {{ item.fabric }}</p>
 
               <div class="mt-auto pt-2 border-top">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="fs-5 fw-bold text-dark">{{ item.unit_price }} ₽ <small class="text-muted fs-6">/ шт.</small></span>
                   {% if item.status == 'AVAILABLE' %}
-                    <span class="badge bg-success">Остаток: {{ item.stock_qty }} шт.</span>
+                    <span class="badge bg-success">На складе: {{ item.stock_qty }} шт.</span>
+                  {% elif item.status == 'SOLD_OUT' %}
+                    <span class="badge bg-danger">Тираж распродан (0 шт.)</span>
                   {% else %}
-                    <span class="badge bg-danger">Тираж распродан</span>
+                    <span class="badge bg-secondary">Снято с производства</span>
                   {% endif %}
                 </div>
 
                 {% if account and account.role == 'Заказчик / Байер' and item.status == 'AVAILABLE' %}
-                  <form action="/actions/place-order" method="post" class="bg-light p-2 rounded border">
+                  <form action="/web/tailoring/order" method="post" class="bg-light p-2 rounded border">
                     <input type="hidden" name="model_id" value="{{ item.id }}" />
                     <div class="row g-1 mb-2">
                       <div class="col-6">
                         <select name="selected_size" class="form-select form-select-sm">
-                          <option value="S (44)">Размер S (44)</option>
-                          <option value="M (46)">Размер M (46)</option>
-                          <option value="L (48)">Размер L (48)</option>
-                          <option value="XL (50)">Размер XL (50)</option>
+                          {% for sz in ['S (44)', 'M (46)', 'L (48)', 'XL (50)'] %}
+                            <option value="{{ sz }}" {% if account.default_size == sz %}selected{% endif %}>Размер {{ sz }}</option>
+                          {% endfor %}
                         </select>
                       </div>
                       <div class="col-6">
-                        <input type="number" name="quantity" class="form-control form-control-sm" value="1" min="1" max="{{ item.stock_qty }}" placeholder="Кол-во" required />
+                        <input type="number" name="quantity" class="form-control form-control-sm" value="1" min="1" max="{{ item.stock_qty }}" required />
                       </div>
                     </div>
-                    <input type="text" name="destination" class="form-control form-control-sm mb-2" placeholder="Город и адрес доставки" required />
-                    <button type="submit" class="btn btn-dark btn-sm w-100">Заказать партию / изделие</button>
+                    <input type="text" name="destination" class="form-control form-control-sm mb-2" value="{{ account.city }}" required />
+                    <button type="submit" class="btn btn-dark btn-sm w-100">Заказать пошив / партию</button>
                   </form>
+
                 {% elif account and account.role == 'Технолог фабрики' %}
-                  <div class="text-muted small text-center py-1 bg-light rounded">
-                    Выпущено технологом ({{ item.released_at }})
+                  <div class="d-flex gap-1 mt-1">
+                    <form action="/web/catalog/restock" method="post" class="flex-fill">
+                      <input type="hidden" name="model_id" value="{{ item.id }}" />
+                      <button class="btn btn-outline-success btn-sm w-100">+10 шт.</button>
+                    </form>
+                    {% if item.status != 'ARCHIVED' %}
+                      <form action="/web/catalog/archive" method="post" class="flex-fill">
+                        <input type="hidden" name="model_id" value="{{ item.id }}" />
+                        <button class="btn btn-outline-secondary btn-sm w-100">В архив</button>
+                      </form>
+                    {% endif %}
+                    <form action="/web/catalog/delete" method="post" class="flex-fill">
+                      <input type="hidden" name="model_id" value="{{ item.id }}" />
+                      <button class="btn btn-outline-danger btn-sm w-100">Удалить</button>
+                    </form>
                   </div>
                 {% endif %}
               </div>
@@ -117,12 +166,12 @@
       {% endfor %}
     </div>
   {% else %}
-    <div class="card card-body text-center text-muted py-5 mb-5 border-0 shadow-sm">
-      Коллекции еще не опубликованы. Войдите под ролью «Технолог фабрики», чтобы добавить первую модель одежды.
+    <div class="card card-body text-center text-muted py-4 mb-5 border-0 shadow-sm">
+      В каталоге пока нет опубликованных коллекций. Войдите под ролью «Технолог фабрики» и выпустите первую модель одежды.
     </div>
   {% endif %}
 
-  <!-- НИЖНИЙ БЛОК: Журнал пошивочного цеха и отгрузок -->
+  <!-- ================= ЖУРНАЛ ЗАКАЗОВ ================= -->
   <h4 class="fw-bold mb-3">Журнал заказов пошивочного цеха</h4>
   <div class="card shadow-sm border-0">
     <div class="table-responsive">
@@ -132,10 +181,10 @@
             <th>№ Заказа</th>
             <th>Изделие (Артикул)</th>
             <th>Заказчик</th>
-            <th>Размер и кол-во</th>
+            <th>Размер и партия</th>
             <th>Сумма</th>
             <th>Адрес отгрузки</th>
-            <th>Статус производства</th>
+            <th>Стадия заказа и управление</th>
           </tr>
         </thead>
         <tbody>
@@ -143,21 +192,50 @@
             <tr>
               <td><code>{{ ord.order_number }}</code></td>
               <td class="fw-semibold">{{ ord.model_name }}</td>
-              <td>{{ ord.client_id }}</td>
+              <td>{{ ord.client_name }}</td>
               <td>{{ ord.selected_size }} × <b>{{ ord.quantity }} шт.</b></td>
               <td class="fw-bold text-success">{{ ord.total_cost }} ₽</td>
               <td class="small text-muted">{{ ord.destination }}</td>
               <td>
                 {% if ord.stage == 'В ПОШИВОЧНОМ ЦЕХЕ' %}
-                  <span class="badge bg-warning text-dark">{{ ord.stage.value }}</span>
-                  {% if account and account.role == 'Технолог фабрики' %}
-                    <form action="/actions/ship-order" method="post" class="d-inline ms-2">
+                  <span class="badge bg-warning text-dark">{{ ord.stage }}</span>
+                {% elif ord.stage == 'ОТГРУЖЕНО СО СКЛАДА' %}
+                  <span class="badge bg-info text-dark">{{ ord.stage }}</span>
+                {% elif ord.stage == 'ПОЛУЧЕНО КЛИЕНТОМ' %}
+                  <span class="badge bg-success">{{ ord.stage }}</span>
+                {% else %}
+                  <span class="badge bg-danger">{{ ord.stage }}</span>
+                {% endif %}
+
+                {% if account and account.role == 'Технолог фабрики' and ord.stage == 'В ПОШИВОЧНОМ ЦЕХЕ' %}
+                  <form action="/web/tailoring/stage" method="post" class="d-inline ms-1">
+                    <input type="hidden" name="order_number" value="{{ ord.order_number }}" />
+                    <input type="hidden" name="new_stage" value="ОТГРУЖЕНО СО СКЛАДА" />
+                    <button class="btn btn-outline-primary btn-sm py-0">Отгрузить</button>
+                  </form>
+                {% endif %}
+
+                {% if account and account.role == 'Заказчик / Байер' %}
+                  {% if ord.stage == 'ОТГРУЖЕНО СО СКЛАДА' %}
+                    <form action="/web/tailoring/stage" method="post" class="d-inline ms-1">
                       <input type="hidden" name="order_number" value="{{ ord.order_number }}" />
-                      <button class="btn btn-outline-success btn-sm py-0">Отгрузить</button>
+                      <input type="hidden" name="new_stage" value="ПОЛУЧЕНО КЛИЕНТОМ" />
+                      <button class="btn btn-success btn-sm py-0">Подтвердить получение</button>
+                    </form>
+                  {% elif ord.stage == 'В ПОШИВОЧНОМ ЦЕХЕ' %}
+                    <form action="/web/tailoring/stage" method="post" class="d-inline ms-1">
+                      <input type="hidden" name="order_number" value="{{ ord.order_number }}" />
+                      <input type="hidden" name="new_stage" value="ОТМЕНЕН" />
+                      <button class="btn btn-outline-secondary btn-sm py-0">Отменить</button>
                     </form>
                   {% endif %}
-                {% else %}
-                  <span class="badge bg-success">{{ ord.stage.value }}</span>
+                {% endif %}
+
+                {% if account %}
+                  <form action="/web/tailoring/delete" method="post" class="d-inline ms-1">
+                    <input type="hidden" name="order_number" value="{{ ord.order_number }}" />
+                    <button class="btn btn-outline-danger btn-sm py-0">Удалить</button>
+                  </form>
                 {% endif %}
               </td>
             </tr>

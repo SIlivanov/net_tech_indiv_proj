@@ -1,26 +1,45 @@
 {% extends 'layout.html' %}
 {% block main %}
-  <div class="row justify-content-center mt-4">
-    <div class="col-md-5">
+  <div class="row justify-content-center mt-3">
+    <div class="col-md-6">
       <div class="card shadow border-0">
         <div class="card-body p-4">
-          <h4 class="fw-bold text-center mb-3">Авторизация на фабрике</h4>
+          <h4 class="fw-bold text-center mb-2">Вход в личный кабинет</h4>
           <p class="text-muted small text-center mb-4">
-            Выберите роль, чтобы протестировать работу разных контекстов микросервисной архитектуры
+            Укажите ваши данные для оформления заказов или управления производством
           </p>
-          <form action="/auth/sign-in" method="post">
+          <form action="/web/users/sign-in" method="post">
             <div class="mb-3">
-              <label class="form-label fw-semibold">Ваше Имя или Название компании:</label>
+              <label class="form-label fw-semibold">ФИО или название организации:</label>
               <input type="text" name="full_name" class="form-control" placeholder="Например, Смирнова Е.В. или Бутик Мода" required />
             </div>
-            <div class="mb-4">
+            <div class="mb-3">
               <label class="form-label fw-semibold">Роль в системе:</label>
               <select name="role" class="form-select">
-                <option value="Технолог фабрики">Технолог фабрики (Выпуск коллекций и отгрузка)</option>
-                <option value="Заказчик / Байер">Заказчик / Байер (Заказ пошива и покупка партий)</option>
+                <option value="Технолог фабрики">Технолог фабрики (Выпуск коллекций и управление цехом)</option>
+                <option value="Заказчик / Байер">Заказчик / Байер (Покупка и заказ пошива по меркам)</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-terracotta w-100 fw-semibold py-2">Продолжить</button>
+            <div class="row g-2 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Контактный телефон</label>
+                <input type="text" name="phone" class="form-control form-control-sm" value="+7 (917) 450-11-22" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Базовая мерка (Размер)</label>
+                <select name="default_size" class="form-select form-select-sm">
+                  <option value="S (44)">S (44)</option>
+                  <option value="M (46)" selected>M (46)</option>
+                  <option value="L (48)">L (48)</option>
+                  <option value="XL (50)">XL (50)</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="form-label small text-muted">Город и адрес доставки по умолчанию</label>
+              <input type="text" name="city" class="form-control form-control-sm" value="г. Уфа, ул. Чернышевского, 88" required />
+            </div>
+            <button type="submit" class="btn btn-terracotta w-100 fw-semibold py-2">Войти</button>
           </form>
         </div>
       </div>

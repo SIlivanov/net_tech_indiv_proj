@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from domain_enums import ModelStatus, SeasonCollection
 
 
@@ -12,7 +12,16 @@ class ClothingModelCreate(BaseModel):
     unit_price: float = Field(..., gt=0, example=14500.0)
 
 
-class ClothingModelRead(ClothingModelCreate):
+class ClothingModelRead(BaseModel):
     id: str
+    technologist_id: str
+    sku: str
+    name: str
+    collection: str
+    fabric: str
+    stock_qty: int
+    unit_price: float
     status: ModelStatus
     released_at: str
+
+    model_config = ConfigDict(from_attributes=True)

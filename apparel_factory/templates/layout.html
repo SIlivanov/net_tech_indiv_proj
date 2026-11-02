@@ -18,9 +18,7 @@
     <header class="navbar navbar-dark brand-header py-3 mb-4 shadow-sm">
       <div class="container">
         <div>
-          <a class="navbar-brand fw-bold fs-4 text-uppercase tracking-wide" href="/">
-            KAMA APPAREL
-          </a>
+          <a class="navbar-brand fw-bold fs-4 text-uppercase" href="/">KAMA APPAREL</a>
           <span class="text-white-50 small d-none d-md-inline">| Швейная фабрика & B2B/B2C Шоурум</span>
         </div>
         <div class="d-flex align-items-center">
@@ -28,8 +26,9 @@
             <div class="text-end me-3 text-white">
               <div class="fw-semibold">{{ account.full_name }}</div>
               <span class="badge bg-warning text-dark">{{ account.role }}</span>
+              <span class="small text-white-50 ms-1">Размер: {{ account.default_size }}</span>
             </div>
-            <a href="/auth/sign-out" class="btn btn-outline-light btn-sm">Сменить аккаунт</a>
+            <a href="/web/users/sign-out" class="btn btn-outline-light btn-sm">Сменить аккаунт</a>
           {% else %}
             <a href="/auth" class="btn btn-warning btn-sm fw-semibold">Личный кабинет</a>
           {% endif %}
