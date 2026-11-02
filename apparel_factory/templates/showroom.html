@@ -1,0 +1,174 @@
+{% extends 'layout.html' %}
+{% block main %}
+
+  <!-- ВЕРХНИЙ БЛОК: Панель технолога или Инфо-баннер -->
+  {% if account and account.role == 'Технолог фабрики' %}
+    <div class="card shadow-sm mb-4 border-0">
+      <div class="card-header bg-dark text-white fw-semibold">
+        Панель технолога: Запуск новой модели одежды в серийное производство
+      </div>
+      <div class="card-body">
+        <form action="/actions/release-model" method="post" class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label small text-muted">Артикул (SKU)</label>
+            <input type="text" name="sku" class="form-control form-control-sm" placeholder="KM-204" required />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-muted">Наименование изделия</label>
+            <input type="text" name="name" class="form-control form-control-sm" placeholder="Пальто шерстяное графит" required />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Сезонная коллекция</label>
+            <select name="collection" class="form-select form-select-sm">
+              {% for s in seasons %}
+                <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Цена за ед. (₽)</label>
+            <input type="number" name="unit_price" class="form-control form-control-sm" placeholder="14900" required />
+          </div>
+          <div class="col-md-7">
+            <label class="form-label small text-muted">Состав полотна и плотность</label>
+            <input type="text" name="fabric" class="form-control form-control-sm" placeholder="85% шерсть мериноса, 15% полиамид, 420 г/м²" required />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted">Тираж партии (шт.)</label>
+            <input type="number" name="stock_qty" class="form-control form-control-sm" value="20" min="1" required />
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-terracotta btn-sm w-100 fw-semibold">
+              + Выпустить в каталог
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% elif not account %}
+    <div class="alert alert-secondary d-flex justify-content-between align-items-center shadow-sm">
+      <div>
+        <strong>Добро пожаловать в онлайн-шоурум фабрики одежды!</strong>
+        Авторизуйтесь как <em>Технолог</em> для выпуска коллекций или как <em>Заказчик</em> для оформления пошива и покупки.
+      </div>
+      <a href="/auth" class="btn btn-dark btn-sm">Войти в систему</a>
+    </div>
+  {% endif %}
+
+  <!-- СРЕДНИЙ БЛОК: Сетка коллекций одежды (3 колонки) -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0">Сезонный каталог изделий</h4>
+    <span class="text-muted small">Всего моделей в каталоге: {{ catalog|length }}</span>
+  </div>
+
+  {% if catalog %}
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+      {% for item in catalog %}
+        <div class="col">
+          <div class="card h-100 shadow-sm card-garment">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge badge-season">{{ item.collection.value }}</span>
+                <code class="text-muted">Арт: {{ item.sku }}</code>
+              </div>
+              <h5 class="card-title fw-bold">{{ item.name }}</h5>
+              <p class="card-text small text-muted mb-2">
+                <b>Ткань:</b> {{ item.fabric }}
+              </p>
+
+              <div class="mt-auto pt-2 border-top">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fs-5 fw-bold text-dark">{{ item.unit_price }} ₽ <small class="text-muted fs-6">/ шт.</small></span>
+                  {% if item.status == 'AVAILABLE' %}
+                    <span class="badge bg-success">Остаток: {{ item.stock_qty }} шт.</span>
+                  {% else %}
+                    <span class="badge bg-danger">Тираж распродан</span>
+                  {% endif %}
+                </div>
+
+                {% if account and account.role == 'Заказчик / Байер' and item.status == 'AVAILABLE' %}
+                  <form action="/actions/place-order" method="post" class="bg-light p-2 rounded border">
+                    <input type="hidden" name="model_id" value="{{ item.id }}" />
+                    <div class="row g-1 mb-2">
+                      <div class="col-6">
+                        <select name="selected_size" class="form-select form-select-sm">
+                          <option value="S (44)">Размер S (44)</option>
+                          <option value="M (46)">Размер M (46)</option>
+                          <option value="L (48)">Размер L (48)</option>
+                          <option value="XL (50)">Размер XL (50)</option>
+                        </select>
+                      </div>
+                      <div class="col-6">
+                        <input type="number" name="quantity" class="form-control form-control-sm" value="1" min="1" max="{{ item.stock_qty }}" placeholder="Кол-во" required />
+                      </div>
+                    </div>
+                    <input type="text" name="destination" class="form-control form-control-sm mb-2" placeholder="Город и адрес доставки" required />
+                    <button type="submit" class="btn btn-dark btn-sm w-100">Заказать партию / изделие</button>
+                  </form>
+                {% elif account and account.role == 'Технолог фабрики' %}
+                  <div class="text-muted small text-center py-1 bg-light rounded">
+                    Выпущено технологом ({{ item.released_at }})
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card card-body text-center text-muted py-5 mb-5 border-0 shadow-sm">
+      Коллекции еще не опубликованы. Войдите под ролью «Технолог фабрики», чтобы добавить первую модель одежды.
+    </div>
+  {% endif %}
+
+  <!-- НИЖНИЙ БЛОК: Журнал пошивочного цеха и отгрузок -->
+  <h4 class="fw-bold mb-3">Журнал заказов пошивочного цеха</h4>
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>№ Заказа</th>
+            <th>Изделие (Артикул)</th>
+            <th>Заказчик</th>
+            <th>Размер и кол-во</th>
+            <th>Сумма</th>
+            <th>Адрес отгрузки</th>
+            <th>Статус производства</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ord in orders %}
+            <tr>
+              <td><code>{{ ord.order_number }}</code></td>
+              <td class="fw-semibold">{{ ord.model_name }}</td>
+              <td>{{ ord.client_id }}</td>
+              <td>{{ ord.selected_size }} × <b>{{ ord.quantity }} шт.</b></td>
+              <td class="fw-bold text-success">{{ ord.total_cost }} ₽</td>
+              <td class="small text-muted">{{ ord.destination }}</td>
+              <td>
+                {% if ord.stage == 'В ПОШИВОЧНОМ ЦЕХЕ' %}
+                  <span class="badge bg-warning text-dark">{{ ord.stage.value }}</span>
+                  {% if account and account.role == 'Технолог фабрики' %}
+                    <form action="/actions/ship-order" method="post" class="d-inline ms-2">
+                      <input type="hidden" name="order_number" value="{{ ord.order_number }}" />
+                      <button class="btn btn-outline-success btn-sm py-0">Отгрузить</button>
+                    </form>
+                  {% endif %}
+                {% else %}
+                  <span class="badge bg-success">{{ ord.stage.value }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">Активных производственных заказов пока нет</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}
